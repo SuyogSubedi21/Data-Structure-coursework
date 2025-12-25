@@ -8,6 +8,11 @@ package VIew;
  *
  * @author Suyoug Subedi
  */
+import Model.UserStore;
+import Model.UserModel;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.JOptionPane;
+
 public class User extends javax.swing.JFrame {
     
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(User.class.getName());
@@ -15,9 +20,36 @@ public class User extends javax.swing.JFrame {
     /**
      * Creates new form User
      */
-    public User() {
-        initComponents();
+private Controller.AdminController controller;
+private UserStore store;
+private String username;
+
+
+ public User(UserStore store, String username) {
+    initComponents();
+    this.store = store;
+    this.username = username;
+    store.seedIfEmpty();
+    loadMenuTable();
+ }
+
+    private void loadMenuTable() {
+    DefaultTableModel tm = (DefaultTableModel) jTable1.getModel();
+    tm.setRowCount(0);
+
+    for (UserModel u : store.getUsers()) {
+        tm.addRow(new Object[]{
+            u.getId(),
+            u.getName(),
+            u.getPrice(),
+            u.getCategory()
+        });
+        
     }
+    }
+    
+
+
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -32,6 +64,7 @@ public class User extends javax.swing.JFrame {
         jLabel2 = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
         jLabel4 = new javax.swing.JLabel();
+        jButton2 = new javax.swing.JButton();
         jPanel2 = new javax.swing.JPanel();
         jLabel1 = new javax.swing.JLabel();
         jLabel5 = new javax.swing.JLabel();
@@ -56,6 +89,9 @@ public class User extends javax.swing.JFrame {
         jLabel4.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
         jLabel4.setText("Canteen Management System");
 
+        jButton2.setText("Logout");
+        jButton2.addActionListener(this::jButton2ActionPerformed);
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -66,11 +102,14 @@ public class User extends javax.swing.JFrame {
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(41, 41, 41)
-                        .addComponent(jLabel4))
+                        .addComponent(jLabel4)
+                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(88, 88, 88)
-                        .addComponent(jLabel3)))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addComponent(jLabel3)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jButton2)
+                        .addGap(65, 65, 65))))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -82,8 +121,10 @@ public class User extends javax.swing.JFrame {
                         .addGap(17, 17, 17))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addComponent(jLabel4)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jLabel3)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel3)
+                            .addComponent(jButton2))
                         .addContainerGap())))
         );
 
@@ -134,6 +175,7 @@ public class User extends javax.swing.JFrame {
         jScrollPane1.setViewportView(jTable1);
 
         jButton1.setText("Place Order");
+        jButton1.addActionListener(this::jButton1ActionPerformed);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -197,33 +239,86 @@ public class User extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_jTextField1ActionPerformed
 
+    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+   int confirm = JOptionPane.showConfirmDialog(
+        this,
+        "Are you sure you want to logout?",
+        "Logout",
+        JOptionPane.YES_NO_OPTION
+);
+
+if (confirm == JOptionPane.YES_OPTION) {
+   new Login(store).setVisible(true);
+this.dispose();
+
+}
+      // TODO add your handling code here:
+    }//GEN-LAST:event_jButton2ActionPerformed
+
+    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+String itemId = jTextField1.getText().trim();
+    String qtyTxt = jTextField2.getText().trim();
+
+    if (itemId.isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Item ID is required.");
+        return;
+    }
+    if (qtyTxt.isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Quantity is required.");
+        return;
+    }
+
+    int qty;
+    try {
+        qty = Integer.parseInt(qtyTxt);
+        if (qty <= 0) throw new NumberFormatException();
+    } catch (NumberFormatException e) {
+        JOptionPane.showMessageDialog(this, "Quantity must be a positive number.");
+        return;
+    }
+
+    UserModel item = store.findById(itemId);
+
+if (item == null) {
+    JOptionPane.showMessageDialog(this, "Item not found: " + itemId);
+    return;
+}
+
+
+    // ✅ create and save order
+    Model.OrderModel order = new Model.OrderModel(
+            username,
+            item.getId(),
+            item.getName(),
+            qty,
+            item.getPrice()
+    );
+    store.addOrder(order);
+
+    // ✅ dialog after order placed
+    JOptionPane.showMessageDialog(
+            this,
+            "Order Placed!\n\nUser: " + username
+                    + "\nItem: " + order.getItemName()
+                    + "\nQty: " + order.getQuantity()
+                    + "\nTotal: " + order.getTotal(),
+            "Success",
+            JOptionPane.INFORMATION_MESSAGE
+    );
+
+    // clear fields
+    jTextField1.setText("");
+    jTextField2.setText("");        // TODO add your handling code here:
+    }//GEN-LAST:event_jButton1ActionPerformed
+
     /**
      * @param args the command line arguments
      */
-    public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
-            logger.log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        //</editor-fold>
-
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(() -> new User().setVisible(true));
-    }
+  
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButton1;
+    private javax.swing.JButton jButton2;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
@@ -239,3 +334,5 @@ public class User extends javax.swing.JFrame {
     private javax.swing.JTextField jTextField2;
     // End of variables declaration//GEN-END:variables
 }
+
+

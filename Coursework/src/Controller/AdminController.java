@@ -20,27 +20,29 @@ public class AdminController {
         return store.getUsers();
     }
 
-    public String addUser(String id, String name, String group) {
+    public String addUser(String id, String name, String category, double price)
+ {
         id = safe(id);
         name = safe(name);
-        group = safe(group);
+        category = safe(category);
 
-        if (id.isEmpty() || name.isEmpty() || group.isEmpty()) {
+        if (id.isEmpty() || name.isEmpty() || category.isEmpty()) {
             return "ERROR: All fields are required.";
         }
 
         if (store.existsId(id)) return "ERROR: ID already exists.";
 
-        store.addUser(new UserModel(id, name, group));
+        store.addUser(new UserModel(id, name,category,price));
         return "OK";
     }
 
-    public String updateUser(String id, String name, String group) {
+   public String updateUser(String id, String name, String category, double price)
+ {
         id = safe(id);
         if (id.isEmpty()) return "ERROR: ID required.";
         if (!store.existsId(id)) return "ERROR: ID not found.";
 
-        store.updateUser(id, safe(name), safe(group));
+        store.updateUser(id, safe(name), safe(category));
         return "OK";
     }
 

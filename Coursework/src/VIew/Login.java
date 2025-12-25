@@ -6,6 +6,9 @@ package VIew;
 import Controller.Controller;
 import javax.swing.JOptionPane;
 import Model.UserStore;
+import VIew.admin;
+import Model.UserStore;
+
 
 
 
@@ -16,15 +19,19 @@ import Model.UserStore;
 public class Login extends javax.swing.JFrame {
     private Controller controller = new Controller();
 
-    
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(Login.class.getName());
+    private UserStore store;
 
-    /**
-     * Creates new form Login
-     */
-    public Login() {
-        initComponents();
-    }
+    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(Login.class.getName());
+    
+public Login() {
+    this(new UserStore());   // calls your existing constructor
+    store.seedIfEmpty();
+}
+
+    public Login(UserStore store) {
+    initComponents();
+    this.store = store;
+}
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -154,29 +161,24 @@ public class Login extends javax.swing.JFrame {
         return;
     }
 
-    if (result.equals("ADMIN")) {
-        new admin().setVisible(true);
-        this.dispose();
-        return;
-    }
-
-    if (result.equals("USER")) {
-        new User().setVisible(true);
-        this.dispose();
-    }
-
-UserStore sharedStore = new UserStore();
+   
+ store.seedIfEmpty();
 
 if (result.equals("ADMIN")) {
-    new admin(sharedStore).setVisible(true);   // Admin = class name
+    new admin(store).setVisible(true);   // ✅ same store
     this.dispose();
     return;
 }
 
 if (result.equals("USER")) {
-    new User(sharedStore).setVisible(true);    // User = class name
+    new User(store, username).setVisible(true);  // ✅ same store
     this.dispose();
 }
+
+
+
+
+
 
 
 
@@ -204,7 +206,12 @@ if (result.equals("USER")) {
         //</editor-fold>
 
         /* Create and display the form */
-        java.awt.EventQueue.invokeLater(() -> new Login().setVisible(true));
+       java.awt.EventQueue.invokeLater(() -> {
+    UserStore store = new UserStore();
+    store.seedIfEmpty();
+    new Login(store).setVisible(true);
+});
+
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
