@@ -36,14 +36,16 @@ public class AdminController {
         return "OK";
     }
 
-   public String updateUser(String id, String name, String category, double price)
+   public String updateUser(String id, String name,String category,double price)
  {
         id = safe(id);
         if (id.isEmpty()) return "ERROR: ID required.";
         if (!store.existsId(id)) return "ERROR: ID not found.";
 
-        store.updateUser(id, safe(name), safe(category));
+        store.updateUser(id, safe(name), safe(category), Double.valueOf(price));
+
         return "OK";
+        
     }
 
     public String deleteUser(String id) {

@@ -515,12 +515,13 @@ private void clearFoodFields() {
         return;
     }
 
-    String result = controller.updateUser(
+   String result = controller.updateUser(
     jTextField1.getText().trim(),
     jTextField2.getText().trim(),
-    jComboBox1.getSelectedItem().toString(),
+    String.valueOf(jComboBox1.getSelectedItem()),
     Double.parseDouble(jTextField3.getText().trim())
 );
+
 
    
     if (!result.equals("OK")) {
