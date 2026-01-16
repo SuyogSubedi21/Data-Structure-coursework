@@ -79,7 +79,7 @@ private java.util.Queue<UserModel> recentFoods = new java.util.LinkedList<>();
         if (found == null) return "ERROR: Item not found.";
 
         menuList.remove(found);
-        deletedMenuStack.push(found); // ✅ correct: this stack stores UserModel
+        deletedMenuStack.push(found); 
         return "OK";
     }
 

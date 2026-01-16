@@ -15,11 +15,23 @@ public class OrderModel {
         this.price = price;
     }
 
-    public String getUsername() { return username; }
-    public String getItemId() { return itemId; }
-    public String getItemName() { return itemName; }
-    public int getQuantity() { return quantity; }
-    public double getPrice() { return price; }
+    public String getUsername() { 
+        return username; 
+    }
+    public String getItemId(){ 
+        return itemId;
+    }
+    public String getItemName() {
+        return itemName;
+    }
+    public int getQuantity() {
+        return quantity; 
+    }
+    public double getPrice() {
+        return price; 
+    }
 
-    public double getTotal() { return price * quantity; }
+    public double getTotal() {
+        return price * quantity; 
+    }
 }

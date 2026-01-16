@@ -14,6 +14,7 @@ import Model.UserStore;
 import Model.UserModel;
 import javax.swing.JOptionPane;
 import java.util.LinkedList;
+import javax.swing.table.DefaultTableModel;
 
 
 public class admin extends javax.swing.JFrame {
@@ -64,8 +65,72 @@ this.menuList = this.store.getUsers(); // get menu list
 
 setupRecentFoodsTable();           // set columns
 refreshRecentFoods();              // show last 5 in tblRecentFoods
+rebuildOrderHistoryStack();
+loadOrderHistoryTableFromStack();
 
 }
+private void rebuildOrderHistoryStack() {
+    orderHistory.clear();
+
+    java.util.List<OrderModel> orders = store.getAllOrders(); // use your real getter
+    if (orders == null) return;
+
+    // push in list order: first pushed = oldest, last pushed = newest
+    for (OrderModel o : orders) {
+        orderHistory.push(o);
+    }
+}
+private void loadOrderHistoryTableFromStack() {
+    DefaultTableModel model = (DefaultTableModel) jTable3.getModel();
+    model.setRowCount(0);
+
+    // show top first (most recent first)
+    for (int i = orderHistory.size() - 1; i >= 0; i--) {
+        OrderModel o = orderHistory.get(i);
+        model.addRow(new Object[]{
+            o.getItemId(),
+            o.getItemName(),
+            o.getPrice(),
+            o.getQuantity()
+        });
+    }
+}
+
+private void removeLastFromHistory() {
+    if (orderHistory.isEmpty()) {
+        JOptionPane.showMessageDialog(this, "No orders available to remove.", "Stack Empty", JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+
+    OrderModel removed = orderHistory.pop(); // ✅ LIFO
+
+    // also remove from store list so it stays deleted
+    store.getAllOrders().remove(removed);  // same object reference
+
+    loadOrderHistoryTableFromStack();
+
+    JOptionPane.showMessageDialog(this, "Removed last order: " + removed.getItemName(), "Removed", JOptionPane.INFORMATION_MESSAGE);
+}
+
+private void updateOrderHistoryTable(java.util.List<OrderModel> list) {
+
+    DefaultTableModel model =
+        (DefaultTableModel) jTable3.getModel();
+
+    model.setRowCount(0);
+
+    for (OrderModel o : list) {
+        model.addRow(new Object[]{
+            o.getUsername(),
+            o.getItemId(),
+            o.getItemName(),
+            o.getQuantity(),
+            o.getTotal()
+        });
+    }
+}
+
+
 private void setupRecentFoodsTable() {
     javax.swing.table.DefaultTableModel model = new javax.swing.table.DefaultTableModel(
         new Object[][]{},
@@ -373,10 +438,11 @@ private void clearFoodFields() {
         jScrollPane2 = new javax.swing.JScrollPane();
         jTable2 = new javax.swing.JTable();
         jButton14 = new javax.swing.JButton();
-        user = new javax.swing.JPanel();
+        orderhistory = new javax.swing.JPanel();
         jLabel8 = new javax.swing.JLabel();
         jScrollPane3 = new javax.swing.JScrollPane();
         jTable3 = new javax.swing.JTable();
+        jButton15 = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -794,45 +860,58 @@ private void clearFoodFields() {
         jPanel3.add(orders, "card3");
 
         jLabel8.setFont(new java.awt.Font("Segoe UI", 0, 16)); // NOI18N
-        jLabel8.setText("User Details");
+        jLabel8.setText("Order History");
 
         jTable3.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null}
+                {null, null, null},
+                {null, null, null},
+                {null, null, null},
+                {null, null, null}
             },
             new String [] {
-                "Item ID", "Item Name", "Price", "Category"
+                "Item name", "Quantity", "Price"
             }
         ));
         jScrollPane3.setViewportView(jTable3);
+        if (jTable3.getColumnModel().getColumnCount() > 0) {
+            jTable3.getColumnModel().getColumn(0).setResizable(false);
+        }
 
-        javax.swing.GroupLayout userLayout = new javax.swing.GroupLayout(user);
-        user.setLayout(userLayout);
-        userLayout.setHorizontalGroup(
-            userLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(userLayout.createSequentialGroup()
-                .addGap(269, 269, 269)
-                .addComponent(jLabel8)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, userLayout.createSequentialGroup()
+        jButton15.setText("Remove from history");
+        jButton15.addActionListener(this::jButton15ActionPerformed);
+
+        javax.swing.GroupLayout orderhistoryLayout = new javax.swing.GroupLayout(orderhistory);
+        orderhistory.setLayout(orderhistoryLayout);
+        orderhistoryLayout.setHorizontalGroup(
+            orderhistoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, orderhistoryLayout.createSequentialGroup()
                 .addContainerGap(118, Short.MAX_VALUE)
                 .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(91, 91, 91))
+            .addGroup(orderhistoryLayout.createSequentialGroup()
+                .addGroup(orderhistoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(orderhistoryLayout.createSequentialGroup()
+                        .addGap(269, 269, 269)
+                        .addComponent(jLabel8))
+                    .addGroup(orderhistoryLayout.createSequentialGroup()
+                        .addGap(257, 257, 257)
+                        .addComponent(jButton15)))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
-        userLayout.setVerticalGroup(
-            userLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(userLayout.createSequentialGroup()
+        orderhistoryLayout.setVerticalGroup(
+            orderhistoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(orderhistoryLayout.createSequentialGroup()
                 .addGap(55, 55, 55)
                 .addComponent(jLabel8)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 356, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(29, Short.MAX_VALUE))
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 248, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(18, 18, 18)
+                .addComponent(jButton15)
+                .addContainerGap(96, Short.MAX_VALUE))
         );
 
-        jPanel3.add(user, "card2");
+        jPanel3.add(orderhistory, "card2");
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -1053,6 +1132,10 @@ loadOrderHistoryTable();
 
     }//GEN-LAST:event_jButton14ActionPerformed
 
+    private void jButton15ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton15ActionPerformed
+removeLastFromHistory();
+    }//GEN-LAST:event_jButton15ActionPerformed
+
     private void loadTable() {
     javax.swing.table.DefaultTableModel tm =
         (javax.swing.table.DefaultTableModel) jTable1.getModel();
@@ -1100,6 +1183,7 @@ loadOrderHistoryTable();
     private javax.swing.JButton jButton12;
     private javax.swing.JButton jButton13;
     private javax.swing.JButton jButton14;
+    private javax.swing.JButton jButton15;
     private javax.swing.JButton jButton2;
     private javax.swing.JButton jButton3;
     private javax.swing.JButton jButton4;
@@ -1142,8 +1226,8 @@ loadOrderHistoryTable();
     private javax.swing.JTextField jTextField3;
     private javax.swing.JTextField jTextField4;
     private javax.swing.JTextField jTextField5;
+    private javax.swing.JPanel orderhistory;
     private javax.swing.JPanel orders;
     private javax.swing.JPanel update;
-    private javax.swing.JPanel user;
     // End of variables declaration//GEN-END:variables
 }
