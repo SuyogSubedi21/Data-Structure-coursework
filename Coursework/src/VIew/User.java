@@ -8,10 +8,12 @@ package VIew;
  *
  * @author Suyoug Subedi
  */
+
 import Model.UserStore;
 import Model.UserModel;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.JOptionPane;
+import VIew.admin;
 
 public class User extends javax.swing.JFrame {
     
@@ -20,6 +22,9 @@ public class User extends javax.swing.JFrame {
     /**
      * Creates new form User
      */
+    private java.util.List<UserModel> menuList;
+
+    private admin admin;
 private Controller.AdminController controller;
 private UserStore store;
 private String username;
@@ -29,24 +34,172 @@ private String username;
     initComponents();
     this.store = store;
     this.username = username;
+
     store.seedIfEmpty();
-    loadMenuTable();
+
+    
+    this.menuList = store.getUsers();
+
+  
+    updateUserTable(menuList);
+}
+
+ public void insertionSortByPriceUser(boolean ascending) {
+
+    int n = menuList.size();
+
+    for (int i = 1; i < n; i++) {
+        UserModel key = menuList.get(i);
+        double keyPrice = key.getPrice();
+
+        int j = i - 1;
+
+        while (j >= 0) {
+            double currentPrice = menuList.get(j).getPrice();
+
+            boolean shouldShift;
+            if (ascending) {
+                shouldShift = currentPrice > keyPrice;
+            } else {
+                shouldShift = currentPrice < keyPrice;
+            }
+
+            if (!shouldShift) break;
+
+            menuList.set(j + 1, menuList.get(j));
+            j--;
+        }
+
+        menuList.set(j + 1, key);
+    }
+
+    // refresh user table after sorting
+    updateUserTable(menuList);
+}
+
+ public void selectionSortByIdUser() {
+    int n = menuList.size();
+    for (int i = 0; i < n - 1; i++) {
+        int min = i;
+        for (int j = i + 1; j < n; j++) {
+            String a = (menuList.get(j).getId() == null) ? "" : menuList.get(j).getId();
+            String b = (menuList.get(min).getId() == null) ? "" : menuList.get(min).getId();
+
+            if (a.compareToIgnoreCase(b) < 0) {
+                min = j;
+            }
+        }
+        UserModel temp = menuList.get(min);
+        menuList.set(min, menuList.get(i));
+        menuList.set(i, temp);
+    }
+}
+
+ private UserModel userBinarySearchById(String id) {
+
+    if (id == null || id.trim().isEmpty()) {
+        return null;
+    }
+
+    // Binary search needs sorted list first
+    selectionSortByIdUser();
+
+    String target = id.trim().toLowerCase();
+    int low = 0;
+    int high = menuList.size() - 1;
+
+    while (low <= high) {
+        int mid = (low + high) / 2;
+
+        String midId = (menuList.get(mid).getId() == null) ? "" : menuList.get(mid).getId().toLowerCase();
+        int cmp = midId.compareTo(target);
+
+        if (cmp == 0) {
+            return menuList.get(mid);
+        } else if (cmp < 0) {
+            low = mid + 1;
+        } else {
+            high = mid - 1;
+        }
+    }
+    return null;
+}
+
+ public java.util.LinkedList<UserModel> userLinearSearchMenu(String query) {
+    java.util.LinkedList<UserModel> result = new java.util.LinkedList<>();
+    if (query == null) return result;
+
+    String q = query.trim().toLowerCase();
+    if (q.isEmpty()) return result;
+
+    for (UserModel m : menuList) {
+        String id = (m.getId() == null) ? "" : m.getId().toLowerCase();
+        String name = (m.getName() == null) ? "" : m.getName().toLowerCase();
+        String cat = (m.getCategory() == null) ? "" : m.getCategory().toLowerCase();
+
+        if (id.contains(q) || name.contains(q) || cat.contains(q)) {
+            result.add(m);
+        }
+    }
+    return result;
+}
+
+ public void selectionSortByNameUser() {
+    int n = menuList.size();
+
+    for (int i = 0; i < n - 1; i++) {
+        int minIndex = i;
+
+        for (int j = i + 1; j < n; j++) {
+            String a = (menuList.get(j).getName() == null) ? "" : menuList.get(j).getName();
+            String b = (menuList.get(minIndex).getName() == null) ? "" : menuList.get(minIndex).getName();
+
+            if (a.compareToIgnoreCase(b) < 0) {
+                minIndex = j;
+            }
+        }
+
+        UserModel temp = menuList.get(minIndex);
+        menuList.set(minIndex, menuList.get(i));
+        menuList.set(i, temp);
+    }
  }
 
-    private void loadMenuTable() {
-    DefaultTableModel tm = (DefaultTableModel) jTable1.getModel();
-    tm.setRowCount(0);
 
-    for (UserModel u : store.getUsers()) {
-        tm.addRow(new Object[]{
-            u.getId(),
-            u.getName(),
-            u.getPrice(),
-            u.getCategory()
+ private void updateUserTable(java.util.List<UserModel> list) {
+
+    javax.swing.table.DefaultTableModel model =
+        (javax.swing.table.DefaultTableModel) jTable1.getModel();
+
+    model.setRowCount(0);
+
+    for (UserModel m : list) {
+        model.addRow(new Object[]{
+            m.getId(),
+            m.getName(),
+            m.getCategory(),
+            m.getPrice()
         });
-        
     }
-    }
+}
+ private void resetUserSearch() {
+
+    // clear search text fields
+    jTextField3.setText(""); // binary search ID field
+    jTextField4.setText(""); // linear search field
+
+    // reload menu list from store
+    menuList = store.getUsers();
+
+    // refresh table with full menu
+    updateUserTable(menuList);
+}
+
+
+
+    
+    
+
     
 
 
@@ -75,6 +228,16 @@ private String username;
         jScrollPane1 = new javax.swing.JScrollPane();
         jTable1 = new javax.swing.JTable();
         jButton1 = new javax.swing.JButton();
+        jButton3 = new javax.swing.JButton();
+        jButton4 = new javax.swing.JButton();
+        jButton5 = new javax.swing.JButton();
+        jButton6 = new javax.swing.JButton();
+        jLabel8 = new javax.swing.JLabel();
+        jLabel9 = new javax.swing.JLabel();
+        jLabel10 = new javax.swing.JLabel();
+        jTextField3 = new javax.swing.JTextField();
+        jTextField4 = new javax.swing.JTextField();
+        jButton7 = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -177,6 +340,29 @@ private String username;
         jButton1.setText("Place Order");
         jButton1.addActionListener(this::jButton1ActionPerformed);
 
+        jButton3.setText("Sort By Name");
+        jButton3.addActionListener(this::jButton3ActionPerformed);
+
+        jButton4.setText("Sort By price");
+        jButton4.addActionListener(this::jButton4ActionPerformed);
+
+        jButton5.setText("Search");
+        jButton5.addActionListener(this::jButton5ActionPerformed);
+
+        jButton6.setText("Search");
+        jButton6.addActionListener(this::jButton6ActionPerformed);
+
+        jLabel8.setText("Menu");
+
+        jLabel9.setText("Binary Search By ID");
+
+        jLabel10.setText("Linear Search:");
+
+        jTextField3.addActionListener(this::jTextField3ActionPerformed);
+
+        jButton7.setText("Reset Search");
+        jButton7.addActionListener(this::jButton7ActionPerformed);
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -200,9 +386,38 @@ private String username;
                     .addGroup(layout.createSequentialGroup()
                         .addGap(89, 89, 89)
                         .addComponent(jButton1)))
-                .addGap(78, 78, 78)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 355, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(126, 126, 126)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(jButton3)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(jLabel8, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(34, 34, 34)
+                                .addComponent(jButton4)
+                                .addGap(67, 67, 67))
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 355, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addContainerGap(23, Short.MAX_VALUE))))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(jLabel9)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jTextField3))
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(jLabel10)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(jButton7)
+                                    .addComponent(jTextField4, javax.swing.GroupLayout.PREFERRED_SIZE, 119, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                        .addGap(28, 28, 28)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jButton6)
+                            .addComponent(jButton5))
+                        .addGap(53, 53, 53))))
             .addGroup(layout.createSequentialGroup()
                 .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(0, 0, Short.MAX_VALUE))
@@ -225,11 +440,29 @@ private String username;
                             .addComponent(jLabel7)
                             .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(26, 26, 26)
-                        .addComponent(jButton1))
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(18, 18, 18)
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 192, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(59, Short.MAX_VALUE))
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jButton1)
+                            .addComponent(jLabel8)
+                            .addComponent(jButton4))
+                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jButton5)
+                            .addComponent(jLabel9)
+                            .addComponent(jTextField3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jButton6)
+                            .addComponent(jTextField4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabel10))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jButton7)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 18, Short.MAX_VALUE)
+                        .addComponent(jButton3)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 192, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addContainerGap())))
         );
 
         pack();
@@ -311,6 +544,48 @@ if (item == null) {
     jTextField2.setText("");        // TODO add your handling code here:
     }//GEN-LAST:event_jButton1ActionPerformed
 
+    private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
+selectionSortByNameUser();
+updateUserTable(menuList);
+ 
+
+
+   
+
+    }//GEN-LAST:event_jButton3ActionPerformed
+
+    private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
+insertionSortByPriceUser(true);
+updateUserTable(menuList);
+
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jButton4ActionPerformed
+
+    private void jTextField3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField3ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jTextField3ActionPerformed
+
+    private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
+UserModel found = userBinarySearchById(jTextField3.getText());
+if (found == null) {
+    javax.swing.JOptionPane.showMessageDialog(this, "Food ID not found");
+    updateUserTable(menuList);
+} else {
+    updateUserTable(java.util.Arrays.asList(found));
+}
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jButton5ActionPerformed
+
+    private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
+updateUserTable(userLinearSearchMenu(jTextField4.getText()));
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jButton6ActionPerformed
+
+    private void jButton7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton7ActionPerformed
+resetUserSearch();
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jButton7ActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -319,19 +594,29 @@ if (item == null) {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton2;
+    private javax.swing.JButton jButton3;
+    private javax.swing.JButton jButton4;
+    private javax.swing.JButton jButton5;
+    private javax.swing.JButton jButton6;
+    private javax.swing.JButton jButton7;
     private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
+    private javax.swing.JLabel jLabel8;
+    private javax.swing.JLabel jLabel9;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTable jTable1;
     private javax.swing.JTextField jTextField1;
     private javax.swing.JTextField jTextField2;
+    private javax.swing.JTextField jTextField3;
+    private javax.swing.JTextField jTextField4;
     // End of variables declaration//GEN-END:variables
 }
 

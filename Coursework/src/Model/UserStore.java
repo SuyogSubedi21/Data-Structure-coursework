@@ -4,10 +4,19 @@ import java.util.LinkedList;
 import java.util.Stack;
 
 public class UserStore {
+private java.util.Queue<UserModel> recentFoods = new java.util.LinkedList<>();
 
+    // MENU (LinkedList)
     private LinkedList<UserModel> menuList = new LinkedList<>();
-    private Stack<UserModel> deletedStack = new Stack<>();
+
+    // Deleted MENU items (Stack) - optional
+    private Stack<UserModel> deletedMenuStack = new Stack<>();
+
+    // ORDERS (Queue using LinkedList)
     private LinkedList<OrderModel> orderList = new LinkedList<>();
+
+    // Completed ORDERS history (Stack)
+    private Stack<OrderModel> orderHistory = new Stack<>();
 
     public void seedIfEmpty() {
         if (!menuList.isEmpty()) return;
@@ -18,6 +27,8 @@ public class UserStore {
         menuList.add(new UserModel("F004", "Tea", "Beverage", 30));
         menuList.add(new UserModel("F005", "Coffee", "Beverage", 80));
     }
+
+    // ============== MENU GETTERS ==============
 
     public LinkedList<UserModel> getUsers() {
         return new LinkedList<>(menuList);
@@ -34,36 +45,45 @@ public class UserStore {
         return findById(id) != null;
     }
 
-    public void addUser(UserModel user) {
-        menuList.add(user);
+    // ============== MENU CRUD (only if you are calling them) ==============
+
+    public String addUser(UserModel item) {
+        if (item == null) return "ERROR: Item is null.";
+
+        String id = (item.getId() == null) ? "" : item.getId().trim();
+        if (id.isEmpty()) return "ERROR: Item ID is required.";
+
+        if (existsId(id)) return "ERROR: Item ID already exists.";
+
+        menuList.add(item);
+        return "OK";
     }
 
-    public void updateUser(String id, String name, String category) {
-        updateUser(id, name, category, null);
+    public String updateUser(String id, String newName, String newCategory, double newPrice) {
+        if (id == null || id.trim().isEmpty()) return "ERROR: Item ID is required.";
+
+        UserModel found = findById(id.trim());
+        if (found == null) return "ERROR: Item not found.";
+
+        if (newName != null && !newName.trim().isEmpty()) found.setName(newName.trim());
+        if (newCategory != null && !newCategory.trim().isEmpty()) found.setCategory(newCategory.trim());
+        if (newPrice > 0) found.setPrice(newPrice);
+
+        return "OK";
     }
 
-    public void updateUser(String id, String name, String category, Double price) {
-        UserModel u = findById(id);
-        if (u == null) return;
+    public String deleteUser(String id) {
+        if (id == null || id.trim().isEmpty()) return "ERROR: Item ID is required.";
 
-        if (name != null && !name.trim().isEmpty()) u.setName(name.trim());
-        if (category != null && !category.trim().isEmpty()) u.setCategory(category.trim());
-        if (price != null) u.setPrice(price);
+        UserModel found = findById(id.trim());
+        if (found == null) return "ERROR: Item not found.";
+
+        menuList.remove(found);
+        deletedMenuStack.push(found); // ✅ correct: this stack stores UserModel
+        return "OK";
     }
 
-    public void deleteUser(String id) {
-        UserModel u = findById(id);
-        if (u == null) return;
-
-        menuList.remove(u);
-        deletedStack.push(u);
-    }
-
-    public boolean undoDelete() {
-        if (deletedStack.isEmpty()) return false;
-        menuList.add(deletedStack.pop());
-        return true;
-    }
+    // ============== ORDERS ==============
 
     public void addOrder(OrderModel order) {
         orderList.add(order);
@@ -72,6 +92,22 @@ public class UserStore {
     public LinkedList<OrderModel> getAllOrders() {
         return new LinkedList<>(orderList);
     }
+
+    // Needed because controller rebuilds the queue after removing one
+    public void clearOrders() {
+        orderList.clear();
+    }
+
+    // Push completed order to history stack
+    public void pushToOrderHistory(OrderModel order) {
+        orderHistory.push(order);
+    }
+
+    public Stack<OrderModel> getOrderHistory() {
+        return orderHistory;
+    }
+
+    // ============== USER ORDER COUNT ==============
 
     public int getTotalOrdersForUser(String username) {
         int totalQty = 0;
@@ -97,4 +133,20 @@ public class UserStore {
         }
         return names;
     }
+    public void pushRecentFood(UserModel food) {
+    if (food == null) return;
+
+    recentFoods.add(food);
+
+    // keep only last 5
+    while (recentFoods.size() > 5) {
+        recentFoods.poll(); // removes oldest
+    }
+}
+
+public java.util.List<UserModel> getRecentFoods() {
+    // return as list so view can loop easily
+    return new java.util.ArrayList<>(recentFoods);
+}
+
 }

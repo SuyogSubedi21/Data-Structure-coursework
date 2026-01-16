@@ -1,67 +1,90 @@
 package Controller;
 
-import Model.UserModel;
 import Model.UserStore;
-import java.util.Queue;
+import Model.OrderModel;
+import Model.UserModel;
+
+import java.util.LinkedList;
+import java.util.Stack;
 
 public class AdminController {
 
-    private UserStore store;
+    private final UserStore store;
 
     public AdminController(UserStore store) {
         this.store = store;
     }
 
-    public void initData() {
-        store.seedIfEmpty();
-    }
+    // ================= MENU (CRUD) =================
 
-    public Queue<UserModel> getAllUsers() {
+    // Return all menu items (copy)
+    public LinkedList<UserModel> getAllMenuItems() {
         return store.getUsers();
     }
 
-    public String addUser(String id, String name, String category, double price)
- {
-        id = safe(id);
-        name = safe(name);
-        category = safe(category);
-
-        if (id.isEmpty() || name.isEmpty() || category.isEmpty()) {
-            return "ERROR: All fields are required.";
-        }
-
-        if (store.existsId(id)) return "ERROR: ID already exists.";
-
-        store.addUser(new UserModel(id, name,category,price));
-        return "OK";
-    }
-
-   public String updateUser(String id, String name,String category,double price)
- {
-        id = safe(id);
-        if (id.isEmpty()) return "ERROR: ID required.";
-        if (!store.existsId(id)) return "ERROR: ID not found.";
-
-        store.updateUser(id, safe(name), safe(category), Double.valueOf(price));
-
-        return "OK";
+    // Add menu item
+    public String addMenuItem(String id, String name, String category, double price) {
+        UserModel item = new UserModel(id, name, category, price);
+        return store.addUser(item);
         
     }
 
-    public String deleteUser(String id) {
-        id = safe(id);
-        if (id.isEmpty()) return "ERROR: ID required.";
-        if (!store.existsId(id)) return "ERROR: ID not found.";
-
-        store.deleteUser(id);
-        return "OK";
+    // Update menu item
+    public String updateMenuItem(String id, String name, String category, double price) {
+        return store.updateUser(id, name, category, price);
     }
 
-    public String undoDelete() {
-        return store.undoDelete() ? "OK" : "ERROR: Nothing to undo.";
+    // Delete menu item
+    public String deleteMenuItem(String id) {
+        return store.deleteUser(id);
     }
 
-    private String safe(String s) {
-        return s == null ? "" : s.trim();
+    // ================= ORDERS (Queue) =================
+
+    // Add order (called from user side)
+    public void addOrder(OrderModel order) {
+        store.addOrder(order);
+    }
+
+    // Get all pending orders (copy)
+    public LinkedList<OrderModel> getAllOrders() {
+        return store.getAllOrders();
+    }
+
+    // ================= COMPLETE ORDER (Queue -> Stack) =================
+    // index = selected row index in Orders table
+    public OrderModel completeOrderAt(int index) {
+
+        LinkedList<OrderModel> ordersCopy = store.getAllOrders();
+
+        if (index < 0 || index >= ordersCopy.size()) {
+            return null;
+        }
+
+        // Take the completed order from the copy
+        OrderModel completed = ordersCopy.remove(index);
+
+        // Now update the real store orderList by rebuilding it
+        store.clearOrders();
+        for (OrderModel o : ordersCopy) {
+            store.addOrder(o);
+        }
+
+        // Push to order history stack
+        store.pushToOrderHistory(completed);
+
+        return completed;
+    }
+
+    // ================= ORDER HISTORY (Stack) =================
+
+    public Stack<OrderModel> getOrderHistory() {
+        return store.getOrderHistory();
+    }
+
+    // ================= USER ORDER COUNT =================
+
+    public int getTotalOrdersForUser(String username) {
+        return store.getTotalOrdersForUser(username);
     }
 }
